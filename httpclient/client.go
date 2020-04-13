@@ -68,31 +68,31 @@ type CallParams struct {
 	ResponseErrorBody interface{}
 }
 
-func (client *Client) Call(ctx context.Context, api *CallParams) error {
+func (client *Client) Call(ctx context.Context, params *CallParams) error {
 	if client.Endpoint == "" {
 		return errors.New("endpoint is required")
 	}
-	if api.Method == "" {
+	if params.Method == "" {
 		return errors.New("method is required")
 	}
 
 	var body io.Reader
-	if api.RequestBody != nil {
-		switch b := api.RequestBody.(type) {
+	if params.RequestBody != nil {
+		switch b := params.RequestBody.(type) {
 		case string:
 			body = strings.NewReader(b)
 		case []byte:
 			body = bytes.NewBuffer(b)
 		default:
 			buf := &bytes.Buffer{}
-			if err := json.NewEncoder(buf).Encode(api.RequestBody); err != nil {
+			if err := json.NewEncoder(buf).Encode(params.RequestBody); err != nil {
 				return fmt.Errorf("failed to parse the request body as JSON: %w", err)
 			}
 			body = buf
 		}
 	}
 
-	req, err := http.NewRequestWithContext(ctx, api.Method, client.Endpoint+api.Path, body)
+	req, err := http.NewRequestWithContext(ctx, params.Method, client.Endpoint+params.Path, body)
 	if err != nil {
 		return fmt.Errorf("failed to create a request: %w", err)
 	}
@@ -116,8 +116,8 @@ func (client *Client) Call(ctx context.Context, api *CallParams) error {
 				err:        fmt.Errorf("status code >= 300: failed to read a response body: %w", err),
 			}
 		}
-		if api.ResponseErrorBody != nil {
-			if err := json.Unmarshal(body, api.ResponseErrorBody); err != nil {
+		if params.ResponseErrorBody != nil {
+			if err := json.Unmarshal(body, params.ResponseErrorBody); err != nil {
 				return &Error{
 					statusCode: res.StatusCode,
 					bodyByte:   body,
@@ -127,7 +127,7 @@ func (client *Client) Call(ctx context.Context, api *CallParams) error {
 			return &Error{
 				statusCode: res.StatusCode,
 				bodyByte:   body,
-				body:       api.ResponseErrorBody,
+				body:       params.ResponseErrorBody,
 				err:        errors.New("status code >= 300"),
 			}
 		}
@@ -138,8 +138,8 @@ func (client *Client) Call(ctx context.Context, api *CallParams) error {
 		}
 	}
 
-	if api.ResponseBody != nil {
-		if err := json.NewDecoder(res.Body).Decode(api.ResponseBody); err != nil {
+	if params.ResponseBody != nil {
+		if err := json.NewDecoder(res.Body).Decode(params.ResponseBody); err != nil {
 			return fmt.Errorf("failed to read a response body as JSON: %w", err)
 		}
 	}
