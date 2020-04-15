@@ -9,6 +9,7 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 )
@@ -63,17 +64,19 @@ func (e *Error) Unwrap() error {
 type CallParams struct {
 	Method            string
 	Path              string
+	Header            http.Header
+	Query             url.Values
 	RequestBody       interface{}
 	ResponseBody      interface{}
 	ResponseErrorBody interface{}
 }
 
-func (client *Client) Call(ctx context.Context, params *CallParams) error {
+func (client *Client) Call(ctx context.Context, params *CallParams) (*http.Response, error) {
 	if client.Endpoint == "" {
-		return errors.New("endpoint is required")
+		return nil, errors.New("endpoint is required")
 	}
 	if params.Method == "" {
-		return errors.New("method is required")
+		return nil, errors.New("method is required")
 	}
 
 	var body io.Reader
@@ -86,52 +89,62 @@ func (client *Client) Call(ctx context.Context, params *CallParams) error {
 		default:
 			buf := &bytes.Buffer{}
 			if err := json.NewEncoder(buf).Encode(params.RequestBody); err != nil {
-				return fmt.Errorf("failed to parse the request body as JSON: %w", err)
+				return nil, fmt.Errorf("failed to parse the request body as JSON: %w", err)
 			}
 			body = buf
 		}
 	}
 
-	req, err := http.NewRequestWithContext(ctx, params.Method, client.Endpoint+params.Path, body)
+	path := client.Endpoint + params.Path
+	if len(params.Query) != 0 {
+		path += "?" + params.Query.Encode()
+	}
+
+	req, err := http.NewRequestWithContext(ctx, params.Method, path, body)
 	if err != nil {
-		return fmt.Errorf("failed to create a request: %w", err)
+		return nil, fmt.Errorf("failed to create a request: %w", err)
+	}
+	for k, list := range params.Header {
+		for _, v := range list {
+			req.Header.Add(k, v)
+		}
 	}
 	if client.SetRequest != nil {
 		if err := client.SetRequest(req); err != nil {
-			return fmt.Errorf("failed to set a request: %w", err)
+			return nil, fmt.Errorf("failed to set a request: %w", err)
 		}
 	}
 
 	httpClient := client.HTTPClient
 	res, err := httpClient.Do(req)
 	if err != nil {
-		return fmt.Errorf("failed to send a request: %w", err)
+		return nil, fmt.Errorf("failed to send a request: %w", err)
 	}
 	defer res.Body.Close()
 	if res.StatusCode >= 300 {
 		body, err := ioutil.ReadAll(res.Body)
 		if err != nil {
-			return &Error{
+			return res, &Error{
 				statusCode: res.StatusCode,
 				err:        fmt.Errorf("status code >= 300: failed to read a response body: %w", err),
 			}
 		}
 		if params.ResponseErrorBody != nil {
 			if err := json.Unmarshal(body, params.ResponseErrorBody); err != nil {
-				return &Error{
+				return res, &Error{
 					statusCode: res.StatusCode,
 					bodyByte:   body,
 					err:        fmt.Errorf("status code >= 300: failed to parse an error response body as JSON: %w", err),
 				}
 			}
-			return &Error{
+			return res, &Error{
 				statusCode: res.StatusCode,
 				bodyByte:   body,
 				body:       params.ResponseErrorBody,
 				err:        errors.New("status code >= 300"),
 			}
 		}
-		return &Error{
+		return res, &Error{
 			statusCode: res.StatusCode,
 			bodyByte:   body,
 			err:        errors.New("status code >= 300"),
@@ -140,8 +153,8 @@ func (client *Client) Call(ctx context.Context, params *CallParams) error {
 
 	if params.ResponseBody != nil {
 		if err := json.NewDecoder(res.Body).Decode(params.ResponseBody); err != nil {
-			return fmt.Errorf("failed to read a response body as JSON: %w", err)
+			return res, fmt.Errorf("failed to read a response body as JSON: %w", err)
 		}
 	}
-	return nil
+	return res, nil
 }
