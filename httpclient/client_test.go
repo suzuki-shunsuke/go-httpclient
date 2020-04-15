@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"net/http"
+	"net/url"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -53,6 +54,8 @@ func TestClient_Call(t *testing.T) {
 		req.Header.Add("Authorization", "token "+token)
 		return nil
 	}
+
+	userAgent := "Mozilla/5.0 (Windows NT 6.1; Win64; x64; rv:47.0) Gecko/20100101 Firefox/47.0"
 	client.HTTPClient = &http.Client{
 		Transport: &flute.Transport{
 			T: t,
@@ -91,6 +94,28 @@ func TestClient_Call(t *testing.T) {
 							Matcher: &flute.Matcher{
 								Method: "GET",
 								Path:   "/api/groups/foo",
+							},
+							Response: &flute.Response{
+								Base: http.Response{
+									StatusCode: 404,
+								},
+								BodyString: `{
+										  "error": "group foo isn't found"
+										}`,
+							},
+						},
+						{
+							Name: "get a group with query",
+							Matcher: &flute.Matcher{
+								Method: "GET",
+								Path:   "/api/groups",
+								Header: http.Header{
+									"User-Agent":    []string{userAgent},
+									"Authorization": []string{"token " + token},
+								},
+								Query: url.Values{
+									"name": []string{"foo"},
+								},
 							},
 							Response: &flute.Response{
 								Base: http.Response{
@@ -174,10 +199,28 @@ func TestClient_Call(t *testing.T) {
 			},
 			isErr: true,
 		},
+		{
+			title: "error response with query and header",
+			params: &CallParams{
+				Method: "GET",
+				Path:   "/groups",
+				Header: http.Header{
+					"User-Agent": []string{userAgent},
+				},
+				Query: url.Values{
+					"name": []string{"foo"},
+				},
+				ResponseErrorBody: &map[string]interface{}{},
+			},
+			expErrorResponse: &map[string]interface{}{
+				"error": "group foo isn't found",
+			},
+			isErr: true,
+		},
 	}
 	for _, d := range data {
 		t.Run(d.title, func(t *testing.T) {
-			err := client.Call(ctx, d.params)
+			_, err := client.Call(ctx, d.params)
 			if d.isErr {
 				require.NotNil(t, err)
 			} else {
