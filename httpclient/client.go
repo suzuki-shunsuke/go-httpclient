@@ -16,11 +16,10 @@ import (
 )
 
 type Client struct {
-	Endpoint        string
-	HTTPClient      *http.Client
-	SetRequest      func(req *http.Request) error
-	CallTimeout     time.Duration
-	ResponseTimeout time.Duration
+	Endpoint   string
+	HTTPClient *http.Client
+	SetRequest func(req *http.Request) error
+	Timeout    time.Duration
 }
 
 func New(endpoint string) *Client {
@@ -72,17 +71,16 @@ type CallParams struct {
 	RequestBody       interface{}
 	ResponseBody      interface{}
 	ResponseErrorBody interface{}
-	CallTimeout       time.Duration
-	ResponseTimeout   time.Duration
+	Timeout           time.Duration
 }
 
 func (client *Client) Call(ctx context.Context, params *CallParams) (*http.Response, error) {
-	if params.CallTimeout > 0 {
-		c, cancel := context.WithTimeout(ctx, params.CallTimeout)
+	if params.Timeout > 0 {
+		c, cancel := context.WithTimeout(ctx, params.Timeout)
 		defer cancel()
 		ctx = c
-	} else if client.CallTimeout > 0 {
-		c, cancel := context.WithTimeout(ctx, client.CallTimeout)
+	} else if client.Timeout > 0 {
+		c, cancel := context.WithTimeout(ctx, client.Timeout)
 		defer cancel()
 		ctx = c
 	}
@@ -114,13 +112,6 @@ func (client *Client) Call(ctx context.Context, params *CallParams) (*http.Respo
 		path += "?" + params.Query.Encode()
 	}
 
-	var cancel context.CancelFunc
-
-	if params.ResponseTimeout > 0 || client.ResponseTimeout > 0 {
-		ctx, cancel = context.WithCancel(ctx)
-		defer cancel()
-	}
-
 	req, err := http.NewRequestWithContext(ctx, params.Method, path, body)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create a request: %w", err)
@@ -136,11 +127,6 @@ func (client *Client) Call(ctx context.Context, params *CallParams) (*http.Respo
 		}
 	}
 
-	if params.ResponseTimeout > 0 {
-		time.AfterFunc(params.ResponseTimeout, cancel)
-	} else if client.ResponseTimeout > 0 {
-		time.AfterFunc(client.ResponseTimeout, cancel)
-	}
 	res, err := client.HTTPClient.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("failed to send a request: %w", err)
