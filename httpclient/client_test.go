@@ -57,7 +57,7 @@ func TestClient_Call(t *testing.T) {
 		req.Header.Add("Authorization", "token "+token)
 		return nil
 	}
-	client.CallTimeout = 1 * time.Second
+	client.Timeout = 1 * time.Second
 
 	userAgent := "Mozilla/5.0 (Windows NT 6.1; Win64; x64; rv:47.0) Gecko/20100101 Firefox/47.0"
 	routeCreateUser := flute.Route{
@@ -265,7 +265,7 @@ func TestClient_Call(t *testing.T) {
 			isErr: true,
 		},
 		{
-			title: "client call timeout",
+			title: "client timeout",
 			params: &CallParams{
 				Method: "POST",
 				Path:   "/users",
@@ -282,7 +282,7 @@ func TestClient_Call(t *testing.T) {
 			isErr:  true,
 		},
 		{
-			title: "params call timeout",
+			title: "params imeout",
 			params: &CallParams{
 				Method: "POST",
 				Path:   "/users",
@@ -294,25 +294,7 @@ func TestClient_Call(t *testing.T) {
 					Email: "foo@example.com",
 				},
 				ResponseBody: &map[string]interface{}{},
-				CallTimeout:  500 * time.Millisecond,
-			},
-			routes: []flute.Route{routeCreateUserTimeout},
-			isErr:  true,
-		},
-		{
-			title: "params response timeout",
-			params: &CallParams{
-				Method: "POST",
-				Path:   "/users",
-				RequestBody: struct {
-					Name  string `json:"name"`
-					Email string `json:"email"`
-				}{
-					Name:  "foo",
-					Email: "foo@example.com",
-				},
-				ResponseBody:    &map[string]interface{}{},
-				ResponseTimeout: 300 * time.Millisecond,
+				Timeout:      500 * time.Millisecond,
 			},
 			routes: []flute.Route{routeCreateUserTimeout},
 			isErr:  true,
