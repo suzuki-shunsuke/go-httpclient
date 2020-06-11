@@ -166,6 +166,8 @@ func (client *Client) Call(ctx context.Context, params *CallParams) (*http.Respo
 		if err := json.NewDecoder(res.Body).Decode(params.ResponseBody); err != nil {
 			return res, fmt.Errorf("failed to read a response body as JSON: %w", err)
 		}
+		return res, nil
 	}
+	_, _ = io.Copy(ioutil.Discard, res.Body)
 	return res, nil
 }
