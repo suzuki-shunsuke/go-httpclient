@@ -32,6 +32,7 @@ func TestError_Error(t *testing.T) {
 	}
 
 	for _, d := range data {
+		d := d
 		t.Run(d.title, func(t *testing.T) {
 			require.Equal(t, d.exp, d.err.Error())
 		})
@@ -301,6 +302,7 @@ func TestClient_Call(t *testing.T) {
 		},
 	}
 	for _, d := range data {
+		d := d
 		t.Run(d.title, func(t *testing.T) {
 			client.HTTPClient.Transport = &flute.Transport{
 				T: t,
@@ -312,7 +314,7 @@ func TestClient_Call(t *testing.T) {
 				},
 			}
 
-			_, err := client.Call(ctx, d.params)
+			_, err := client.Call(ctx, d.params) //nolint:bodyclose
 			if d.isErr {
 				require.NotNil(t, err)
 			} else {
