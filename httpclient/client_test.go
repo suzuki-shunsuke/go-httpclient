@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
-	"github.com/suzuki-shunsuke/flute/flute"
+	"github.com/suzuki-shunsuke/flute/v2/flute"
 )
 
 func TestError_Error(t *testing.T) {
@@ -63,11 +63,11 @@ func TestClient_Call(t *testing.T) {
 	userAgent := "Mozilla/5.0 (Windows NT 6.1; Win64; x64; rv:47.0) Gecko/20100101 Firefox/47.0"
 	routeCreateUser := flute.Route{
 		Name: "create a user",
-		Matcher: &flute.Matcher{
+		Matcher: flute.Matcher{
 			Method: "POST",
 			Path:   "/api/users",
 		},
-		Tester: &flute.Tester{
+		Tester: flute.Tester{
 			BodyJSONString: `{
 			  "name": "foo",
 			  "email": "foo@example.com"
@@ -76,7 +76,7 @@ func TestClient_Call(t *testing.T) {
 				"Authorization": []string{"token " + token},
 			},
 		},
-		Response: &flute.Response{
+		Response: flute.Response{
 			Base: http.Response{
 				StatusCode: 201,
 			},
@@ -89,11 +89,11 @@ func TestClient_Call(t *testing.T) {
 	}
 	routeCreateUserTimeout := flute.Route{
 		Name: "create a user",
-		Matcher: &flute.Matcher{
+		Matcher: flute.Matcher{
 			Method: "POST",
 			Path:   "/api/users",
 		},
-		Tester: &flute.Tester{
+		Tester: flute.Tester{
 			BodyJSONString: `{
 			  "name": "foo",
 			  "email": "foo@example.com"
@@ -102,7 +102,7 @@ func TestClient_Call(t *testing.T) {
 				"Authorization": []string{"token " + token},
 			},
 		},
-		Response: &flute.Response{
+		Response: flute.Response{
 			Response: func(req *http.Request) (*http.Response, error) {
 				ctx := req.Context()
 				type resp struct {
@@ -207,11 +207,11 @@ func TestClient_Call(t *testing.T) {
 			routes: []flute.Route{
 				{
 					Name: "get a group",
-					Matcher: &flute.Matcher{
+					Matcher: flute.Matcher{
 						Method: "GET",
 						Path:   "/api/groups/foo",
 					},
-					Response: &flute.Response{
+					Response: flute.Response{
 						Base: http.Response{
 							StatusCode: 404,
 						},
@@ -239,7 +239,7 @@ func TestClient_Call(t *testing.T) {
 			routes: []flute.Route{
 				{
 					Name: "get a group with query",
-					Matcher: &flute.Matcher{
+					Matcher: flute.Matcher{
 						Method: "GET",
 						Path:   "/api/groups",
 						Header: http.Header{
@@ -250,7 +250,7 @@ func TestClient_Call(t *testing.T) {
 							"name": []string{"foo"},
 						},
 					},
-					Response: &flute.Response{
+					Response: flute.Response{
 						Base: http.Response{
 							StatusCode: 404,
 						},
