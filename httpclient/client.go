@@ -22,8 +22,8 @@ type Client struct {
 	Timeout    time.Duration
 }
 
-func New(endpoint string) *Client {
-	return &Client{
+func New(endpoint string) Client {
+	return Client{
 		Endpoint:   endpoint,
 		HTTPClient: http.DefaultClient,
 	}
@@ -36,22 +36,19 @@ type Error struct {
 	err        error
 }
 
-func (e *Error) StatusCode() int {
+func (e Error) StatusCode() int {
 	return e.statusCode
 }
 
-func (e *Error) BodyByte() []byte {
+func (e Error) BodyByte() []byte {
 	return e.bodyByte
 }
 
-func (e *Error) Body() interface{} {
+func (e Error) Body() interface{} {
 	return e.body
 }
 
-func (e *Error) Error() string {
-	if e == nil {
-		return ""
-	}
+func (e Error) Error() string {
 	a := ""
 	if e.err != nil {
 		a = e.err.Error()
@@ -59,7 +56,7 @@ func (e *Error) Error() string {
 	return "status code: " + strconv.Itoa(e.statusCode) + ", " + string(e.bodyByte) + ": " + a
 }
 
-func (e *Error) Unwrap() error {
+func (e Error) Unwrap() error {
 	return e.err
 }
 
@@ -74,7 +71,7 @@ type CallParams struct {
 	Timeout           time.Duration
 }
 
-func (client *Client) Call(ctx context.Context, params *CallParams) (*http.Response, error) {
+func (client Client) Call(ctx context.Context, params CallParams) (*http.Response, error) {
 	if params.Timeout > 0 {
 		c, cancel := context.WithTimeout(ctx, params.Timeout)
 		defer cancel()

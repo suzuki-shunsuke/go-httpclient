@@ -18,11 +18,11 @@ func TestError_Error(t *testing.T) {
 	data := []struct {
 		title string
 		exp   string
-		err   *Error
+		err   Error
 	}{
 		{
 			title: "normal",
-			err: &Error{
+			err: Error{
 				statusCode: 500,
 				bodyByte:   []byte(`{"error": "Internal Server Error"}`),
 				err:        errors.New("status code >= 300"),
@@ -137,7 +137,7 @@ func TestClient_Call(t *testing.T) {
 	ctx := context.Background()
 	data := []struct {
 		title            string
-		params           *CallParams
+		params           CallParams
 		routes           []flute.Route
 		exp              interface{}
 		expErrorResponse interface{}
@@ -145,7 +145,7 @@ func TestClient_Call(t *testing.T) {
 	}{
 		{
 			title: "request body is struct",
-			params: &CallParams{
+			params: CallParams{
 				Method: "POST",
 				Path:   "/users",
 				RequestBody: struct {
@@ -166,7 +166,7 @@ func TestClient_Call(t *testing.T) {
 		},
 		{
 			title: "request body is string",
-			params: &CallParams{
+			params: CallParams{
 				Method:       "POST",
 				Path:         "/users",
 				RequestBody:  `{"name": "foo", "email": "foo@example.com"}`,
@@ -181,7 +181,7 @@ func TestClient_Call(t *testing.T) {
 		},
 		{
 			title: "request body is []byte",
-			params: &CallParams{
+			params: CallParams{
 				Method:       "POST",
 				Path:         "/users",
 				RequestBody:  []byte(`{"name": "foo", "email": "foo@example.com"}`),
@@ -196,7 +196,7 @@ func TestClient_Call(t *testing.T) {
 		},
 		{
 			title: "error response",
-			params: &CallParams{
+			params: CallParams{
 				Method:            "GET",
 				Path:              "/groups/foo",
 				ResponseErrorBody: &map[string]interface{}{},
@@ -225,7 +225,7 @@ func TestClient_Call(t *testing.T) {
 		},
 		{
 			title: "error response with query and header",
-			params: &CallParams{
+			params: CallParams{
 				Method: "GET",
 				Path:   "/groups",
 				Header: http.Header{
@@ -267,7 +267,7 @@ func TestClient_Call(t *testing.T) {
 		},
 		{
 			title: "client timeout",
-			params: &CallParams{
+			params: CallParams{
 				Method: "POST",
 				Path:   "/users",
 				RequestBody: struct {
@@ -284,7 +284,7 @@ func TestClient_Call(t *testing.T) {
 		},
 		{
 			title: "params imeout",
-			params: &CallParams{
+			params: CallParams{
 				Method: "POST",
 				Path:   "/users",
 				RequestBody: struct {
